@@ -1,23 +1,22 @@
 # Write your code here :-)
 import RPi.GPIO as GPIO
 import time
+led_green = 35
+led_red = 37
 GPIO.setmode(GPIO.BOARD)
-GPIO.setwarnings(False)
-GPIO.setup(35, GPIO.OUT)
-GPIO.setup(37, GPIO.OUT)
-def green(isopen):
-    GPIO.output(35, isopen)
-def red(isopen):
-    GPIO.output(37, isopen)
+GPIO.setup(led_green, GPIO.OUT)
+GPIO.setup(led_red, GPIO.OUT)
+def green():
+    GPIO.output(led_green, 1)
+    GPIO.output(led_red, 0)
+def red():
+    GPIO.output(led_green, 0)
+    GPIO.output(led_red, 1)
 
-
-time.sleep(0.5)
-def loop():
-    green(1)
-    red(0)
+def alter_light():
+    green()
     time.sleep(0.5)
-    green(0)
-    red(1)
+    red()
     time.sleep(0.5)
 while True:
-    loop()
+    alter_light()
