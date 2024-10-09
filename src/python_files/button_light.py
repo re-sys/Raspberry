@@ -40,7 +40,7 @@ state = 0
 
 while True:
     # print(GPIO.input(button))
-    time.sleep(.1)
+    # time.sleep(.1)
     if(GPIO.input(button)==button_pressed):
         # print("1")
         time.sleep(0.05)
