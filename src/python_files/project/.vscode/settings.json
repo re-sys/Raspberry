@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "inv_mpu_dmp_motion_driver.h": "c",
+        "wiringpii2c.h": "c",
+        "math.h": "c"
+    }
+}
