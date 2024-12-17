@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from time import sleep
+from joy_stick import Joystick
 class RobotArm:
     def __init__(self):
         
@@ -180,6 +181,13 @@ class RobotArm:
 
 if __name__ == '__main__':
     robot = RobotArm()
+    js = Joystick()
+    vel = np.zeros(3)
+    grip = 0
+    while True:
+        vel,grip = js.read_values()
+        print(f"Velocity: {vel}, Grip: {grip}")
+        sleep(0.1)
     # bus_number = 1
     # device_address = 0x00  # 示例地址
     # resetReg = 0xFB  # 示例寄存器

@@ -2,13 +2,38 @@ import smbus
 import time
 import queue
 import threading
+import numpy as np
 # PCF8591的I2C地址
 PCF8591_ADDRESS = 0x48
 # 创建一个队列来存储电压值
 voltage_queue = queue.Queue()
 
 bus = smbus.SMBus(1)  # 使用I2C1
-
+class Joystick:
+    def __init__(self):
+        self.values = np.zeros(4)
+        self.PCF8591_ADDRESS = 0x48
+        self.bus = smbus.SMBus(1)  # 使用I2C1
+    def read_all_channels_auto_increment(self):
+    # 第一次读取时，选择通道0，并设置自动递增标志（通常是0x40）
+        try:
+            data = self.bus.read_i2c_block_data(self.PCF8591_ADDRESS, 0x40, 4)
+            self.data = np.array(data).astype(np.float32)
+            print(f"读取数据：{data}")
+            return True
+        except OSError:
+            print("读取所有通道失败")
+            return False  # 如果读取失败，返回Falsedef read_
+    def change_format(self):
+        self.values = self.data-128
+        self.values[np.abs(self.values)<28] = 0
+        self.values[self.values>=28] = self.values[self.values>=28]-28
+        self.values[self.values<=-28] = self.values[self.values<=-28]+28
+        return self.values
+    def read_values(self):
+        self.read_all_channels_auto_increment()
+        self.change_format()
+        return self.values[:3],self.values[3]
 def read_analog(channel):
     # 写入控制字节，设置要读取的通道
     # bus.write_byte(PCF8591_ADDRESS, channel | 0x40)
