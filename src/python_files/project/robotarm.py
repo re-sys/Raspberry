@@ -57,22 +57,22 @@ class RobotArm:
         # 控制机械臂到达指定点
         # 这里的x,y,z是目标点的坐标
         # 计算每个关节的角度
-        self.pos = np.array([x,y,z])
-        theta1, theta2, theta3,theta4 = self.inverse_kinematics(x,y,z)
+        self.project_position(x, y, z)
+        print(f"Current Position: {self.pos}")
+        theta1, theta2, theta3,theta4 = self.inverse_kinematics(self.pos[0], self.pos[1], self.pos[2])
         # 控制关节角度
         if self.flag == True:
             angles = np.array([theta1, theta2, theta3,theta4]).astype(np.int32)
             self.control_joints(angles)
         else:
             print("Inverse Kinematics Failed!")
-
     def generate_points(self):
         points = []
         count = 0
         for x in range(-9, 9, 2):
-            for y in range(-9, 9, 2):
+           
                 for z in range(5, 13, 2):
-                    if abs(x) >=3 or abs(y) >=3:
+                    if abs(x) >=3:
                         self.flag = True  # 重置flag为True
                         self.inverse_kinematics(x, y, z)
                         points.append((x, y, z, self.flag))
@@ -170,6 +170,13 @@ class RobotArm:
         return self.pos
     def go_home(self):
         self.control_ToPoint(3,4,13)
+    def velocity_control(self, delta_xyz):
+        # 这里的delta_xyz是位移增量
+        # 计算每个关节的角度
+        new_pos = self.pos + delta_xyz
+        self.control_ToPoint(new_pos[0], new_pos[1], new_pos[2])
+        # 控制关节角度
+
 
 if __name__ == '__main__':
     robot = RobotArm()

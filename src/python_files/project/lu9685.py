@@ -36,7 +36,7 @@ class DeviceController:
             # 连续写两个命令字节
             self.bus.write_byte_data(self.device_address, self.resetReg, self.command)
             controlChannel(0, 0)#底座可以随意配置
-            controlChannel(1, 75)#0-70,75是竖直，70就是下降到水平，顺时针转动
+            controlChannel(1, 75)#75是竖直，70就是下降到水平，顺时针转动
             controlChannel(2, 125)#125度是相等，逆时针转动
             controlChannel(3, 90)#90度是水平，顺时针转动
             controlChannel(4, 180)#0度是超前有偏移
