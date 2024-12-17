@@ -19,6 +19,7 @@ class RobotArm:
         command = 0xFB  # 示例命令
         self.controller = DeviceController(bus_number, device_address, resetReg, command)
         self.controller.resetDevice()
+        self.pos = np.array([0,0,0])
     def control_joints(self, target_angles):
     # 控制关节角度
     # 这里的angles是四个关节角度的列表
@@ -56,6 +57,7 @@ class RobotArm:
         # 控制机械臂到达指定点
         # 这里的x,y,z是目标点的坐标
         # 计算每个关节的角度
+        self.pos = np.array([x,y,z])
         theta1, theta2, theta3,theta4 = self.inverse_kinematics(x,y,z)
         # 控制关节角度
         if self.flag == True:
@@ -144,6 +146,30 @@ class RobotArm:
 
         # 显示图像
         plt.show()
+    def project_position(self, x, y, z):
+        prj = (x**2 + y**2)**0.5
+        angle = math.atan2(y,x)
+        new_z = np.clip(z, 5, 13)
+        if z<=7:
+            new_prj = np.clip(prj, 9,13)
+        elif z<=8:
+            new_prj = np.clip(prj, 9,12)
+        elif z<=9:
+            new_prj = np.clip(prj, 7,12)
+        elif z<=10:
+            new_prj = np.clip(prj, 7,11)
+        elif z<=11:
+            new_prj = np.clip(prj, 6,11)
+        elif z<=12:
+            new_prj = np.clip(prj, 5,9)
+        else:
+            new_prj = np.clip(prj, 4,7)
+        new_x = new_prj*math.cos(angle)
+        new_y = new_prj*math.sin(angle)
+        self.pos = np.array([new_x,new_y,new_z])
+        return self.pos
+    def go_home(self):
+        self.control_ToPoint(3,4,13)
 
 if __name__ == '__main__':
     robot = RobotArm()
