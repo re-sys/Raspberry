@@ -321,6 +321,17 @@ class MainWindow(QtWidgets.QMainWindow):
         # Gz = gyro_z/131.0
         
         # Update data arrays
+
+        # self.data_ax = np.roll(self.data_ax, -5)
+        # self.data_ax[-5:] = acc_x
+        # # self.data_ax[-1] = ax_real
+        # self.data_ay = np.roll(self.data_ay, -5)
+        # self.data_ay[-5:] = acc_y
+        # # self.data_ay[-1] = ay_real
+        # self.data_az = np.roll(self.data_az, -5)
+        # self.data_az[-5:] = acc_z
+
+
         self.data_ax = np.roll(self.data_ax, -1)
         self.data_ax[-1] = Ax
         # self.data_ax[-1] = ax_real
