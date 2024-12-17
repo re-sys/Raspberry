@@ -359,7 +359,7 @@ print (" Reading Data of Gyroscope and Accelerometer")
 # print("Gyroscope Y Offset:", gyro_y_offset)
 # print("Gyroscope Z Offset:", gyro_z_offset)
 class kalman_filter:
-    def __init__(self,Q,R):
+    def __init__(self,Q=0.001,R=0.1):
         self.Q = Q
         self.R = R
         

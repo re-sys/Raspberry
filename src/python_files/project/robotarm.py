@@ -5,9 +5,10 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from time import sleep
 from joy_stick import Joystick
+from read_mpu import MPU6050
 class RobotArm:
     def __init__(self):
-        self.speed = 1
+        self.speed = 0.1
         self.base_height = 5
         self.link1_length = 4.5
         self.link2_length = 4
@@ -184,12 +185,21 @@ class RobotArm:
 if __name__ == '__main__':
     robot = RobotArm()
     js = Joystick()
+    mpu = MPU6050()
     vel = np.zeros(3)
     grip = 0
     while True:
         vel,grip = js.read_values()
         print(f"Velocity: {vel}, Grip: {grip}")
         sleep(0.1)
+    #待测试
+    while True:
+        x,y,z = input("请输入坐标(x,y,z):").split(",")
+        x,y,z = float(x),float(y),float(z)
+        theta1, theta2, theta3,theta4 = robot.inverse_kinematics(x,y,z)
+        robot.control_ToPoint(x,y,z)
+    #待测试
+    
     robot.velocity_control(vel)
     # bus_number = 1
     # device_address = 0x00  # 示例地址
