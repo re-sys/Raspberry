@@ -13,14 +13,15 @@ class RobotArm:
         self.link1_length = 4.5
         self.link2_length = 4
         self.offset = 5
+        self.grip = 0
         self.flag = True
-        self.thetas = np.array([90,180,180,180])
+        self.thetas = np.array([36,198,140,249])
         bus_number = 1
         device_address = 0x00  # 示例地址
         resetReg = 0xFB  # 示例寄存器
         command = 0xFB  # 示例命令
         self.controller = DeviceController(bus_number, device_address, resetReg, command)
-        self.controller.resetDevice()
+        # self.controller.resetDevice()
         self.pos = np.array([0,0,0])
     def control_joints(self, target_angles):
     # 控制关节角度
@@ -150,8 +151,10 @@ class RobotArm:
         plt.show()
     def project_position(self, x, y, z):
         prj = (x**2 + y**2)**0.5
-        angle = math.atan2(y,x)
+        # y = abs(y)
+        # angle = math.atan2(y,x)
         new_z = np.clip(z, 5, 13)
+        
         if z<=7:
             new_prj = np.clip(prj, 9,13)
         elif z<=8:
@@ -166,9 +169,12 @@ class RobotArm:
             new_prj = np.clip(prj, 5,9)
         else:
             new_prj = np.clip(prj, 4,7)
-        new_x = new_prj*math.cos(angle)
-        new_y = new_prj*math.sin(angle)
-        self.pos = np.array([new_x,new_y,new_z])
+        # new_x = new_prj*math.cos(angle)
+        # new_y = new_prj*math.sin(angle)
+        # if np.abs
+        if new_prj == prj and new_z == z:
+            self.pos = np.array([x,y,z])
+        print(f"Projected Position: {self.pos}")
         return self.pos
     def go_home(self):
         self.control_ToPoint(3,4,13)
@@ -180,10 +186,17 @@ class RobotArm:
         # 控制关节角度
     def set_speed(self, speed):
         self.speed = speed
-
+    def set_grip(self, grip):
+        # 这里的grip是夹爪的力度
+        # 这里可以添加代码来控制夹爪的力度
+        self.grip = np.clip(self.grip +grip*self.speed*10,130,180)
+        print(f"Grip: {self.grip}")
+        self.controller.set_channel5_angle(self.grip)
 
 if __name__ == '__main__':
     robot = RobotArm()
+
+    robot.go_home()
     js = Joystick()
     mpu = MPU6050()
     vel = np.zeros(3)
@@ -191,13 +204,15 @@ if __name__ == '__main__':
     while True:
         vel,grip = js.read_values()
         print(f"Velocity: {vel}, Grip: {grip}")
+        robot.velocity_control(vel)
+        robot.set_grip(grip)
         sleep(0.1)
     #待测试
-    while True:
-        x,y,z = input("请输入坐标(x,y,z):").split(",")
-        x,y,z = float(x),float(y),float(z)
-        theta1, theta2, theta3,theta4 = robot.inverse_kinematics(x,y,z)
-        robot.control_ToPoint(x,y,z)
+    # while True:
+    #     x,y,z = input("请输入坐标(x,y,z):").split(",")
+    #     x,y,z = float(x),float(y),float(z)
+    #     theta1, theta2, theta3,theta4 = robot.inverse_kinematics(x,y,z)
+    #     robot.control_ToPoint(x,y,z)
     #待测试
     
     robot.velocity_control(vel)

@@ -90,8 +90,8 @@ class DeviceController:
 
     def set_channel5_angle(self, angle):  # 输入进来的angle是150到180度的角度
         angle = angle
-        if angle < 150:
-            angle = 150
+        if angle < 130:
+            angle = 130
         elif angle > 180:
             angle = 180
         self.controlChannel(5, angle)

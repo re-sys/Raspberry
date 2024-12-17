@@ -23,7 +23,7 @@ class MPU6050:
     def __init__(self):
         self.bus = smbus.SMBus(1)  # or bus = smbus.SMBus(0) for older version boards
         self.Device_Address = 0x68   # MPU6050 device address
-        self.MPU_Init()
+       
         self.acc = np.zeros(3)
         self.vel = np.zeros(3)
         self.kfx = kalman_filter()
@@ -49,6 +49,7 @@ class MPU6050:
         self.offset_x = 0
         self.offset_y = 0
         self.offset_z = 0
+        self.MPU_Init()
     def MPU_Init(self):
         # Write to sample rate register
         self.bus.write_byte_data(self.Device_Address, self.PWR_MGMT_1, 0)
