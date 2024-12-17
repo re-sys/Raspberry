@@ -14,6 +14,8 @@ class Joystick:
         self.values = np.zeros(4)
         self.PCF8591_ADDRESS = 0x48
         self.bus = smbus.SMBus(1)  # 使用I2C1
+        self.data = np.zeros(4)
+        self.values = np.zeros(4)
     def read_all_channels_auto_increment(self):
     # 第一次读取时，选择通道0，并设置自动递增标志（通常是0x40）
         try:
@@ -29,7 +31,7 @@ class Joystick:
         self.values[np.abs(self.values)<28] = 0
         self.values[self.values>=28] = self.values[self.values>=28]-28
         self.values[self.values<=-28] = self.values[self.values<=-28]+28
-        return self.values
+        return self.values/100
     def read_values(self):
         self.read_all_channels_auto_increment()
         self.change_format()

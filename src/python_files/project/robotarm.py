@@ -7,7 +7,7 @@ from time import sleep
 from joy_stick import Joystick
 class RobotArm:
     def __init__(self):
-        
+        self.speed = 1
         self.base_height = 5
         self.link1_length = 4.5
         self.link2_length = 4
@@ -171,12 +171,14 @@ class RobotArm:
         return self.pos
     def go_home(self):
         self.control_ToPoint(3,4,13)
-    def velocity_control(self, delta_xyz):
+    def velocity_control(self, vel):
         # 这里的delta_xyz是位移增量
         # 计算每个关节的角度
-        new_pos = self.pos + delta_xyz
+        new_pos = self.pos + vel*self.speed
         self.control_ToPoint(new_pos[0], new_pos[1], new_pos[2])
         # 控制关节角度
+    def set_speed(self, speed):
+        self.speed = speed
 
 
 if __name__ == '__main__':
@@ -188,6 +190,7 @@ if __name__ == '__main__':
         vel,grip = js.read_values()
         print(f"Velocity: {vel}, Grip: {grip}")
         sleep(0.1)
+    robot.velocity_control(vel)
     # bus_number = 1
     # device_address = 0x00  # 示例地址
     # resetReg = 0xFB  # 示例寄存器
