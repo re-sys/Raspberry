@@ -26,6 +26,7 @@ class RobotArm:
         # self.controller.resetDevice()
         self.pos = np.array([0,0,0])
         self.recorded_data = []
+        self.theta = 0
     def control_joints(self, target_angles):
     # 控制关节角度
     # 这里的angles是四个关节角度的列表
@@ -106,13 +107,44 @@ class RobotArm:
                             count = count + 1
         print(f"共生成{count}个点")
         return points    
-    def inverse_kinematics(self, x, y, z):
+    def set_theta(self, theta):
+        self.theta = theta
+    def vel_theta(self, vel):
+        self.theta = self.theta + vel*self.speed
+        if self.theta > np.pi/2:
+            self.theta = np.pi/2
+        elif self.theta < -np.pi/2:
+            self.theta = -np.pi/2
+        return self.theta
+    def control_ToPoint_v2(self, x=None, y=None, z=None, new_pos=None):
+        # 控制机械臂到达指定点
+        # 这里的x,y,z是目标点的坐标
+        # 计算每个关节的角度
+        if new_pos is not None:
+            x, y, z = new_pos[0],new_pos[1],new_pos[2]
+        elif x is None or y is None or z is None:
+            raise ValueError("Invalid arguments, either provide x, y, z or new_pos")
+        self.pos = self.project_position_v2(x, y, z)
+        print(f"Current Position: {self.pos}")
+        theta1, theta2, theta3,theta4 = self.inverse_kinematics(self.pos[0], self.pos[1], self.pos[2],use_v2=True)
+        # 控制关节角度
+        if self.flag == True:
+            angles = np.array([theta1, theta2, theta3,theta4]).astype(np.int32)
+            self.control_joints(angles)
+            if self.recording_enabled:
+                self.record_data(self.pos, self.grip)
+        else:
+            print("Inverse Kinematics Failed!")
+    def inverse_kinematics(self, x, y, z,use_v2=False):
         # calculate the angle of the first joint
         theta1 = math.atan2(x,y)
         projection = math.sqrt(x**2 + y**2)-self.offset
         short = abs(z - self.base_height)
         third_len = math.sqrt(short**2+projection**2)
-        
+        if use_v2:
+            projection = math.sqrt(x**2 + y**2)-np.cos(self.theta)*self.offset
+            short = abs(z+np.sin(self.theta)*self.offset - self.base_height)
+            third_len = math.sqrt(short**2+projection**2)
         # calculate the angle of the second joint
         try:
             if self.base_height > z:
@@ -130,10 +162,12 @@ class RobotArm:
             self.flag = False    
             return 0,0,0,0
         # if self.base_height > z:
+        
         theta4 = theta2 + theta3 -math.pi/2
         # if self.base_height <= z:
         #     theta4 = 
-        
+        if use_v2:
+            theta4 = theta2 + theta3 -math.pi/2 - self.theta
         # return the angles in degrees
         theta1 = math.degrees(theta1)
         theta2 = math.degrees(theta2)
@@ -168,9 +202,8 @@ class RobotArm:
         # 显示图像
         plt.show()
     def project_position(self, x, y, z):
+
         prj = (x**2 + y**2)**0.5
-        # y = abs(y)
-        # angle = math.atan2(y,x)
         new_z = np.clip(z, 5, 13)
         
         if z<=7:
@@ -196,6 +229,33 @@ class RobotArm:
             new_pos = self.pos#返回当前的位置
         print(f"Projected Position: {new_pos}")
         return new_pos
+    def project_position_v2(self, x, y, z):
+        offset_x = np.cos(self.theta)*self.offset
+        offset_z = np.sin(self.theta)*self.offset
+        prj = (x**2 + y**2)**0.5-offset_x
+        new_z = np.clip(z+offset_z, 5, 13)
+        
+        if new_z<=7:
+            new_prj = np.clip(prj, 4,8)
+        elif new_z<=8:
+            new_prj = np.clip(prj, 4,7)
+        elif new_z<=9:
+            new_prj = np.clip(prj, 2,7)
+        elif new_z<=10:
+            new_prj = np.clip(prj, 2,6)
+        elif new_z<=11:
+            new_prj = np.clip(prj, 1,6)
+        elif new_z<=12:
+            new_prj = np.clip(prj, 0,4)
+        else:
+            new_prj = np.clip(prj, -1,2)
+
+        if new_prj == prj and new_z == z+offset_z:
+            new_pos = np.array([x,y,z])
+        else:
+            new_pos = self.pos#返回当前的位置
+        print(f"Projected Position: {new_pos}")
+        return new_pos
     def go_home(self):
         self.control_ToPoint(3,4,13)
     def velocity_control(self, vel):
@@ -206,7 +266,7 @@ class RobotArm:
         # 控制关节角度
     def set_speed(self, speed):
         self.speed = speed
-    def set_grip(self, grip):
+    def vel_grip(self, grip):
         # 这里的grip是夹爪的力度
         # 这里可以添加代码来控制夹爪的力度
         self.grip = np.clip(self.grip +grip*self.speed*10,130,180)
@@ -268,13 +328,22 @@ if __name__ == '__main__':
     # 添加中断检测事件
     GPIO.add_event_detect(button_pin, GPIO.FALLING, callback=debounce_button, bouncetime=200)
     robot.load_points_from_file()
+
     while True:
         vel,grip = js.read_values()
         print(f"Velocity: {vel}, Grip: {grip}")
         new_pos = robot.vel2pos(vel)
         robot.control_ToPoint(new_pos=new_pos)
-        robot.set_grip(grip)
+        robot.vel_grip(grip)
         sleep(0.1)
+        vel,grip = js.read_values()
+        ###
+        print(f"Velocity: {vel}, Grip: {grip}")
+        new_pos = robot.vel2pos(vel)
+        robot.control_ToPoint_v2(new_pos=new_pos)
+        robot.vel_theta(grip)
+        sleep(0.1)
+        
     #待测试
     # while True:
     #     x,y,z = input("请输入坐标(x,y,z):").split(",")
