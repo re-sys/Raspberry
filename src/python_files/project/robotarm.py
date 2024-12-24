@@ -23,6 +23,7 @@ class RobotArm:
         self.controller = DeviceController(bus_number, device_address, resetReg, command)
         # self.controller.resetDevice()
         self.pos = np.array([0,0,0])
+        self.recorded_data = []
     def control_joints(self, target_angles):
     # 控制关节角度
     # 这里的angles是四个关节角度的列表
@@ -55,20 +56,40 @@ class RobotArm:
             # 这里可以添加代码来实际控制关节，例如发送信号给硬件
             self.controller.set_group_angle(target_angles)
             print(f"Direct Set: {self.thetas}")  # 示例输出
-
-    def control_ToPoint(self, x, y, z):
+    def vel2pos(self, vel):
+        # 速度转位置
+        new_pos = self.pos + vel*self.speed
+        new_pos = self.project_position(new_pos[0], new_pos[1], new_pos[2])
+        return new_pos
+    def record_data(self, new_pos, grip):
+        if self.recording_enabled:
+            self.recorded_data.append((new_pos[0],new_pos[1],new_pos[2], grip))
+    def control_ToPoint(self, x=None, y=None, z=None, new_pos=None):
         # 控制机械臂到达指定点
         # 这里的x,y,z是目标点的坐标
         # 计算每个关节的角度
-        self.project_position(x, y, z)
+        if new_pos is not None:
+            x, y, z = new_pos[0],new_pos[1],new_pos[2]
+        elif x is None or y is None or z is None:
+            raise ValueError("Invalid arguments, either provide x, y, z or new_pos")
+        self.pos = self.project_position(x, y, z)
         print(f"Current Position: {self.pos}")
         theta1, theta2, theta3,theta4 = self.inverse_kinematics(self.pos[0], self.pos[1], self.pos[2])
         # 控制关节角度
         if self.flag == True:
             angles = np.array([theta1, theta2, theta3,theta4]).astype(np.int32)
             self.control_joints(angles)
+            if self.recording_enabled:
+                self.record_data(self.pos, self.grip)
         else:
             print("Inverse Kinematics Failed!")
+    def set_group_pos_grip(self, pos, grip):
+        # 设置机械臂的位置和夹爪的状态
+        # 这里的pos是机械臂的位置，grip是夹爪的状态
+        # 计算每个关节的角度
+        new_pos = self.project_position(pos[0], pos[1], pos[2])
+        self.control_ToPoint(new_pos = new_pos)
+        self.set_grip(grip)
     def generate_points(self):
         points = []
         count = 0
@@ -82,12 +103,7 @@ class RobotArm:
                         if self.flag ==True:
                             count = count + 1
         print(f"共生成{count}个点")
-        return points
-    def save_points_to_file(self, points, filename='points.txt'):
-        with open(filename, 'w') as file:
-            for point in points:
-                x, y, z, flag = point
-                file.write(f"({x}, {y}, {z}): {str(flag)}\n")
+        return points    
     def inverse_kinematics(self, x, y, z):
         # calculate the angle of the first joint
         theta1 = math.atan2(x,y)
@@ -173,9 +189,11 @@ class RobotArm:
         # new_y = new_prj*math.sin(angle)
         # if np.abs
         if new_prj == prj and new_z == z:
-            self.pos = np.array([x,y,z])
-        print(f"Projected Position: {self.pos}")
-        return self.pos
+            new_pos = np.array([x,y,z])
+        else:
+            new_pos = self.pos#返回当前的位置
+        print(f"Projected Position: {new_pos}")
+        return new_pos
     def go_home(self):
         self.control_ToPoint(3,4,13)
     def velocity_control(self, vel):
@@ -192,7 +210,29 @@ class RobotArm:
         self.grip = np.clip(self.grip +grip*self.speed*10,130,180)
         print(f"Grip: {self.grip}")
         self.controller.set_channel5_angle(self.grip)
+    def save_points_to_file(self, points, filename='points.txt'):
+        with open(filename, 'w') as file:
+            for point in points:
+                x, y, z, grip = point
+                file.write(f"({x}, {y}, {z}, {grip})\n")
 
+    def load_points_from_file(self, filename='points.txt'):
+        with open(filename, 'r') as file:
+            lines = file.readlines()
+            for line in lines:
+                try:
+                    x, y, z, grip = map(float, line.strip().strip('()').split(','))
+                    self.set_group_pos_grip((x,y,z), grip)
+                    sleep(0.1)
+                except ValueError:
+                    print(f"Invalid line in file: {line}")
+    def enable_recording(self):
+        self.recording_enabled = True
+        print("Recording Enabled")
+
+    def disable_recording(self):
+        self.recording_enabled = False
+        print("Recording Disabled")
 if __name__ == '__main__':
     robot = RobotArm()
 
@@ -204,7 +244,9 @@ if __name__ == '__main__':
     while True:
         vel,grip = js.read_values()
         print(f"Velocity: {vel}, Grip: {grip}")
-        robot.velocity_control(vel)
+        new_pos = robot.vel2pos(vel)
+        robot.control_ToPoint(new_pos=new_pos)
+        
         robot.set_grip(grip)
         sleep(0.1)
     #待测试
@@ -221,7 +263,11 @@ if __name__ == '__main__':
     # resetReg = 0xFB  # 示例寄存器
     # command = 0xFB  # 示例命令
     # controller = DeviceController(bus_number, device_address, resetReg, command)
-
+# def save_points_to_file(self, points, filename='points.txt'):
+#         with open(filename, 'w') as file:
+#             for point in points:
+#                 x, y, z, flag = point
+#                 file.write(f"({x}, {y}, {z}): {str(flag)}\n")
     # 重置设备
     # controller.resetDevice()
     # controller.resetDevice()
