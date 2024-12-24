@@ -6,6 +6,8 @@ from mpl_toolkits.mplot3d import Axes3D
 from time import sleep
 from joy_stick import Joystick
 from read_mpu import MPU6050
+import RPi.GPIO as GPIO
+import time
 class RobotArm:
     def __init__(self):
         self.speed = 0.1
@@ -241,12 +243,36 @@ if __name__ == '__main__':
     mpu = MPU6050()
     vel = np.zeros(3)
     grip = 0
+    # 设置GPIO模式为BCM
+    GPIO.setmode(GPIO.BCM)
+
+    # 定义按钮GPIO引脚
+    button_pin = 17
+
+    # 设置按钮引脚为输入，并启用上拉电阻（按钮按下时为低电平）
+    GPIO.setup(button_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+    # 定义一个防抖函数
+    def debounce_button(channel):
+        # 等待一段时间以防止抖动
+        time.sleep(0.2)
+        # 再次检查按钮状态
+        if GPIO.input(channel) == GPIO.LOW:
+            if not robot.recording_enabled:
+                robot.enable_recording()
+            else:
+                robot.disable_recording()
+                robot.save_points_to_file()
+            print("按钮已按下")
+
+    # 添加中断检测事件
+    GPIO.add_event_detect(button_pin, GPIO.FALLING, callback=debounce_button, bouncetime=200)
+    robot.load_points_from_file()
     while True:
         vel,grip = js.read_values()
         print(f"Velocity: {vel}, Grip: {grip}")
         new_pos = robot.vel2pos(vel)
         robot.control_ToPoint(new_pos=new_pos)
-        
         robot.set_grip(grip)
         sleep(0.1)
     #待测试
