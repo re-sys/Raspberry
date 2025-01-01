@@ -101,6 +101,12 @@ class RobotArm:
         new_pos = self.project_position(pos[0], pos[1], pos[2])
         self.control_ToPoint(new_pos = new_pos)
         self.set_grip(grip)
+    def set_grip(self, grip):
+        # 设置夹爪的状态
+        # 这里的grip是夹爪的状态
+        self.grip = np.clip(grip,100,180)
+        print(f"Grip: {self.grip}")
+        self.controller.set_channel5_angle(self.grip)
     def generate_points(self):
         points = []
         count = 0
@@ -308,8 +314,10 @@ class RobotArm:
         self.grip = np.clip(self.grip +grip*self.speed*10,100,180)
         print(f"Grip: {self.grip}")
         self.controller.set_channel5_angle(self.grip)
-    def save_points_to_file(self, points, filename='points.txt'):
+    def save_points_to_file(self, points=None, filename='points.txt'):
         with open(filename, 'w') as file:
+            if points is None:
+                points = self.recorded_data
             for point in points:
                 x, y, z, grip = point
                 file.write(f"({x}, {y}, {z}, {grip})\n")
@@ -335,6 +343,7 @@ if __name__ == '__main__':
     robot = RobotArm()
 
     robot.go_home()
+    robot.load_points_from_file()
     js = Joystick()
     mpu = MPU6050()
     vel = np.zeros(3)
@@ -363,7 +372,7 @@ if __name__ == '__main__':
 
     # 添加中断检测事件
     GPIO.add_event_detect(button_pin, GPIO.FALLING, callback=debounce_button, bouncetime=200)
-    # robot.load_points_from_file()
+    # 
 
     while True:
         vel,grip = js.read_values()
