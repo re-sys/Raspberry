@@ -56,7 +56,7 @@ class DeviceController:
         angle = -angle + 90
         self.controlChannel(0, angle)
 
-    def set_channel1_angle(self, angle):  # 输入进来的angle是0-180度的角度
+    def set_channel1_angle(self, angle):  # 输入进来的angle是0-180度的角度输出15-135
         angle = 180 - angle + 75
         if angle < 15:
             angle = 15
@@ -72,7 +72,7 @@ class DeviceController:
             angle = 180
         self.controlChannel(2, angle)
 
-    def set_channel3_angle(self, angle):  # 输入进来的angle是90到180度的角度
+    def set_channel3_angle(self, angle):  # 输入进来的angle是90到180度的角度输出0-180
         angle = angle - 90
         if angle < 0:
             angle = 0
@@ -120,7 +120,10 @@ def resetDevice():
         print(f"写入命令时发生错误: {e.strerror}")
 
 def controlChannel(channel, angle):
-    bus.write_byte_data(device_address, channel, angle)
+    try:
+        bus.write_byte_data(device_address, channel, angle)
+    except IOError as e:
+        print(f"写入命令时发生错误: {e.strerror}")
 def set_chnnel0_angle(angle):#输入进来的angle是-90到90度的角度
     angle = -angle + 90
     controlChannel(0, angle)
@@ -177,7 +180,7 @@ def save_teaching_data():
 if __name__ == '__main__':
     root = tk.Tk()
     root.title("示教控制")
-    initial_angles = {0: 0, 1: 10, 2: 55, 3: 90, 4: 0, 5: 90}
+    initial_angles = {0: 0, 1: 40, 2: 55, 3: 90, 4: 0, 5: 90}
     # 创建一个变量来存储滑杆的值
     # slider_var = tk.IntVar()
     for i in range(0, 6):
@@ -185,7 +188,7 @@ if __name__ == '__main__':
         slider_var = tk.IntVar(value=initial_angle)
         angle_label = ttk.Label(root, text=f"通道 {i}: {initial_angle}°")
         if i == 1:
-            slider = ttk.Scale(root, from_=0, to=70, orient='horizontal', variable=slider_var, command=lambda event, ch=i, sv=slider_var, al=angle_label: on_slider_change(event, ch, sv, al))
+            slider = ttk.Scale(root, from_=15, to=135, orient='horizontal', variable=slider_var, command=lambda event, ch=i, sv=slider_var, al=angle_label: on_slider_change(event, ch, sv, al))
         else:
             slider = ttk.Scale(root, from_=0, to=180, orient='horizontal', variable=slider_var, command=lambda event, ch=i, sv=slider_var, al=angle_label: on_slider_change(event, ch, sv, al))
 # slider = ttk.Scale(root, from_=0, to=180, orient='horizontal', variable=slider_var, command=lambda event, ch=i: on_slider_change(event, ch))
